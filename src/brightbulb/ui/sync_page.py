@@ -12,9 +12,12 @@ therefore runs on every exit path.
 
 from __future__ import annotations
 
+import asyncio
+import contextlib
 import logging
 import threading
 from collections.abc import Callable
+from concurrent.futures import Future
 from typing import TYPE_CHECKING, Any
 
 import gi
@@ -54,6 +57,10 @@ class SyncPage(Adw.Bin):
         self._active_area_id: str | None = None
         self._starting = False
         self._status_timer = 0
+        # In-flight deactivation, so a restart waits for it rather than racing.
+        self._release: Future[None] | None = None
+        # Our own streamer id, learnt the first time we claim the area.
+        self._streamer_rid: str | None = None
 
         self._build()
 
@@ -253,9 +260,6 @@ class SyncPage(Adw.Bin):
         area = self._selected_area()
         if area is None:
             return
-        if area.active_streamer:
-            self._fail("Another app is already streaming to this area.")
-            return
 
         self._starting = True
         self._set_status("Preparing…", busy=True)
@@ -365,11 +369,47 @@ class SyncPage(Adw.Bin):
             return
 
         self._set_status("Claiming the entertainment area…", busy=True)
+        release, self._release = self._release, None
         self.app.runner.run_and_then(
-            entertainment.start_streaming(bridge, area.id),
-            on_done=lambda _: self._connect(area),
+            self._claim(bridge, area.id, release),
+            on_done=lambda state: self._claimed(area, state),
             on_error=lambda err: self._fail(f"Could not start the area: {err}"),
         )
+
+    async def _claim(
+        self,
+        bridge: Any,
+        area_id: str,
+        release: Future[None] | None,
+    ) -> entertainment.StreamingState:
+        """Take ownership of the area and report who ended up holding it."""
+        if release is not None:
+            # Turning mirroring off and straight back on leaves the previous
+            # release still in flight; claiming first would let it land
+            # afterwards and hand the area back mid-stream.
+            with contextlib.suppress(Exception):
+                await asyncio.wrap_future(release)
+
+        await entertainment.start_streaming(bridge, area_id)
+        return await entertainment.streaming_state(bridge, area_id)
+
+    def _claimed(
+        self, area: entertainment.EntertainmentArea, state: entertainment.StreamingState
+    ) -> None:
+        if not state.active:
+            self._fail("The bridge did not hand over the entertainment area.")
+            return
+
+        if self._streamer_rid and state.streamer_rid != self._streamer_rid:
+            # Only reachable once we have streamed and learnt our own id, so
+            # this cannot misfire on our own claim.
+            self._fail("Another app is already streaming to this area.")
+            return
+
+        # Whoever holds the area immediately after our own start is us. There is
+        # no other way to learn the id: the auth resource is not readable.
+        self._streamer_rid = state.streamer_rid
+        self._connect(area)
 
     def _connect(self, area: entertainment.EntertainmentArea) -> None:
         self._active_area_id = area.id
@@ -457,7 +497,9 @@ class SyncPage(Adw.Bin):
         bridge = self.app.bridge.bridge
         if area_id and bridge is not None:
             # Always release: an area left active locks out every other Hue app.
-            self.app.runner.run_and_then(entertainment.stop_streaming(bridge, area_id))
+            self._release = self.app.runner.run_and_then(
+                entertainment.stop_streaming(bridge, area_id)
+            )
 
         self._set_status("Not running", busy=False)
 

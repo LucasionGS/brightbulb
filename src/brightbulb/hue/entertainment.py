@@ -46,7 +46,9 @@ class EntertainmentArea:
     configuration_type: str
     channels: tuple[ChannelPosition, ...]
     active: bool
-    # Set when some *other* application is streaming to this area.
+    # Whoever currently holds the area -- which is *us* while we stream, not
+    # only other applications. Never use this to decide whether we may claim
+    # the area; use `streaming_state` for that.
     active_streamer: str | None = None
 
     @property
@@ -54,20 +56,31 @@ class EntertainmentArea:
         return tuple(channel.channel_id for channel in self.channels)
 
 
+@dataclass(frozen=True)
+class StreamingState:
+    """Who holds an area right now, read live from the bridge."""
+
+    active: bool
+    streamer_rid: str | None
+
+
 def list_areas(bridge: Any) -> list[EntertainmentArea]:
     """All entertainment configurations on the bridge."""
     areas: list[EntertainmentArea] = []
     for config in bridge.config.entertainment_configuration:
+        active = _enum_value(config.status).lower() == "active"
         areas.append(
             EntertainmentArea(
                 id=config.id,
                 name=_name_of(config),
                 configuration_type=_enum_value(config.configuration_type),
                 channels=tuple(_positions_of(config)),
-                active=_enum_value(config.status).lower() == "active",
-                active_streamer=getattr(
-                    getattr(config, "active_streamer", None), "rid", None
-                ),
+                active=active,
+                # Only trustworthy while the area is active. aiohue applies
+                # events field by field and keeps the previous value whenever
+                # one arrives as null, so a released area goes on naming
+                # whoever streamed to it last for the rest of the session.
+                active_streamer=_streamer_rid(config) if active else None,
             )
         )
     areas.sort(key=lambda area: area.name.lower())
@@ -88,6 +101,25 @@ def preferred_area(areas: list[EntertainmentArea]) -> EntertainmentArea | None:
         return None
     screen = [a for a in areas if a.configuration_type.lower() == "screen"]
     return (screen or areas)[0]
+
+
+async def streaming_state(bridge: Any, entertainment_id: str) -> StreamingState:
+    """Read who holds the area straight from CLIP, bypassing the cache.
+
+    The cached copy cannot answer this. Because aiohue keeps a field's previous
+    value when an event carries it as null, ``active_streamer`` survives the
+    release that cleared it on the bridge -- so a perfectly free area still
+    looks occupied. Ownership decisions therefore always re-read.
+    """
+    data = await bridge.request(
+        "get", f"clip/v2/resource/entertainment_configuration/{entertainment_id}"
+    )
+    item = data[0] if isinstance(data, list) else data
+    streamer = item.get("active_streamer") or {}
+    return StreamingState(
+        active=str(item.get("status", "")).lower() == "active",
+        streamer_rid=streamer.get("rid"),
+    )
 
 
 async def start_streaming(bridge: Any, entertainment_id: str) -> None:
@@ -119,6 +151,11 @@ async def _set_action(bridge: Any, entertainment_id: str, action: str) -> None:
 def _name_of(config: Any) -> str:
     metadata = getattr(config, "metadata", None)
     return str(getattr(metadata, "name", None) or "Entertainment area")
+
+
+def _streamer_rid(config: Any) -> str | None:
+    rid = getattr(getattr(config, "active_streamer", None), "rid", None)
+    return str(rid) if rid else None
 
 
 def _enum_value(value: Any) -> str:
