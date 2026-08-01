@@ -1,0 +1,1 @@
+"""Colour conversion and processing."""

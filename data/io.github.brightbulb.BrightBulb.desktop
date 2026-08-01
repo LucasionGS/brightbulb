@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=BrightBulb
+GenericName=Hue Control Center
+Comment=Control Philips Hue lights and mirror your screen onto them
+Exec=brightbulb
+Icon=io.github.brightbulb.BrightBulb
+Terminal=false
+Categories=Utility;GTK;
+Keywords=hue;philips;light;lights;lamp;ambient;bias;sync;
+StartupNotify=true
+StartupWMClass=io.github.brightbulb.BrightBulb

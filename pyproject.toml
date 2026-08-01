@@ -1,0 +1,71 @@
+[project]
+name = "brightbulb"
+version = "0.1.0"
+description = "An open source Philips Hue control center for Linux, with screen mirroring over the Hue Entertainment API"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { file = "LICENSE" }
+dependencies = [
+    "aiohue>=4.9.0",
+    "zeroconf>=0.150.0",
+    "numpy>=2.1",
+    "brightbulb-dtls",
+]
+
+[project.scripts]
+brightbulb = "brightbulb.__main__:main"
+
+# PyGObject, GStreamer and the GI typelibs (Gtk-4.0, Adw-1, Gst-1.0, GstApp-1.0,
+# Secret-1) are deliberately NOT listed above. They are consumed from the system
+# via a --system-site-packages venv; see README.md for the pacman packages.
+
+[tool.uv.sources]
+brightbulb-dtls = { path = "crates/hue-stream" }
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "ruff>=0.8",
+    "mypy>=1.13",
+    # Needed to exercise `make install` the way the AUR package does. The
+    # PKGBUILD gets these from makedepends; having them here lets the packaging
+    # path be tested without installing anything system-wide.
+    "build>=1.2",
+    "installer>=0.7",
+    "maturin>=1.14",
+    "hatchling>=1.25",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/brightbulb"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.mypy]
+python_version = "3.12"
+files = ["src/brightbulb"]
+strict = true
+# PyGObject ships no type stubs, so every gi symbol resolves to Any. Subclassing
+# a widget and returning the result of any GI call would then error in every
+# file; these two flags are the price of GTK. The rest of strict mode still
+# applies to our own code.
+disallow_subclassing_any = false
+warn_return_any = false
+[[tool.mypy.overrides]]
+module = ["gi.*", "aiohue.*", "zeroconf.*", "brightbulb_dtls.*"]
+ignore_missing_imports = true
+disallow_untyped_calls = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
