@@ -13,6 +13,7 @@ mirror your screen onto them in real time.
 - **Screen mirroring** to a Hue entertainment area, mapping every light to the
   part of your screen it physically sits next to.
 - **Live updates** from the CLIP v2 event stream, so the UI never polls.
+- **Runs from the system tray**, so mirroring keeps going with the window shut.
 
 ## Requirements
 
@@ -54,6 +55,22 @@ Set `BRIGHTBULB_DEBUG=1` for verbose logging.
 Press the round button on your bridge when BrightBulb asks, and it pairs
 itself. **Ctrl+1/2/3** switch between Lights, Scenes and Sync.
 
+### The tray icon
+
+Closing the window hides BrightBulb to the tray instead of quitting, so screen
+mirroring carries on and everything is exactly where you left it when you come
+back. **Ctrl+H** minimizes on demand, clicking the tray icon toggles the window,
+and the tray menu can start or stop mirroring without opening it at all.
+
+Turn off **Close to Tray** in the main menu if you would rather the close button
+quit outright. Quitting — from the tray, the menu or **Ctrl+Q** — always releases
+the entertainment area.
+
+This needs something showing a tray. Any StatusNotifierItem host works (Waybar's
+`tray` module, Quickshell, GNOME with the AppIndicator extension, KDE); without
+one, closing the window quits, because hiding into a tray that is not there
+would leave no way back.
+
 ### Screen sharing prompts
 
 The first time you start mirroring, your compositor asks which monitor to
@@ -63,7 +80,7 @@ on Hyprland it is an explicit choice in `hyprland-share-picker`. Do that and
 later launches reconnect without prompting at all.
 
 If you decline, everything still works; you are just asked each time.
-BrightBulb only negotiates once per run and pauses the pipeline when mirroring
+BrightBulb only negotiates once per run and keeps the session when mirroring
 stops, so you are never prompted twice in a session.
 
 ### Mirroring the wrong screen
@@ -106,6 +123,12 @@ portal ScreenCast → PipeWire → GStreamer (scale to 64×36) → mapper → co
 GStreamer does the downscaling, so Python only ever touches a few kilobytes per
 frame. Colours are averaged in **linear light**, not gamma-encoded sRGB —
 averaging encoded pixels makes dark scenes visibly too bright.
+
+The tray icon is spoken directly over D-Bus (`org.kde.StatusNotifierItem` plus
+`com.canonical.dbusmenu`) rather than through libayatana-appindicator. GTK4
+dropped `GtkStatusIcon` and the usual replacement links against GTK3 — loading
+GTK3 and GTK4 into one process aborts — so the protocol is easier than the
+library.
 
 ## Development
 

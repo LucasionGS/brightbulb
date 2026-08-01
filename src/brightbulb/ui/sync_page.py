@@ -61,6 +61,9 @@ class SyncPage(Adw.Bin):
         self._release: Future[None] | None = None
         # Our own streamer id, learnt the first time we claim the area.
         self._streamer_rid: str | None = None
+        # Notified whenever mirroring starts, stops or changes status, so the
+        # tray can follow along without polling.
+        self.on_state_change: Callable[[], None] | None = None
 
         self._build()
 
@@ -190,6 +193,11 @@ class SyncPage(Adw.Bin):
             self._status_row.set_subtitle(
                 "No entertainment areas. Create one in the Hue app first."
             )
+        # Areas arriving is what makes mirroring possible, so anything mirroring
+        # the toggle's state -- the tray menu -- needs to hear about it. Hosts
+        # that never call AboutToShow would otherwise show it greyed out.
+        if self.on_state_change is not None:
+            self.on_state_change()
 
     def _selected_area(self) -> entertainment.EntertainmentArea | None:
         index = self._area_row.get_selected()
@@ -458,20 +466,17 @@ class SyncPage(Adw.Bin):
         self._engine = engine
 
         assert self._source is not None
-        if self._pipeline is None:
-            self._pipeline = CapturePipeline(
-                self._source,
-                on_frame=engine.submit_frame,
-                width=sync.grid_width,
-                height=sync.grid_height,
-                fps=sync.target_fps,
-                on_error=lambda message: call_on_ui(self._fail, message),
-            )
-            self._pipeline.start()
-        else:
-            # Existing pipeline: repoint it at the new engine and wake it up.
-            self._pipeline.set_frame_callback(engine.submit_frame)
-            self._pipeline.resume()
+        # A fresh pipeline every time, on the same portal fd. Reusing a stopped
+        # one is not possible and pausing one is worse -- see CapturePipeline.stop.
+        self._pipeline = CapturePipeline(
+            self._source,
+            on_frame=engine.submit_frame,
+            width=sync.grid_width,
+            height=sync.grid_height,
+            fps=sync.target_fps,
+            on_error=lambda message: call_on_ui(self._fail, message),
+        )
+        self._pipeline.start()
 
         self._starting = False
         self._set_status("Mirroring", busy=False)
@@ -489,9 +494,10 @@ class SyncPage(Adw.Bin):
             engine.close_transport()
 
         if self._pipeline is not None:
-            # Paused, not stopped: keeping the portal session avoids a fresh
-            # permission prompt the next time mirroring starts.
-            self._pipeline.pause()
+            # The portal session and its fd outlive the pipeline, so restarting
+            # builds a new one without prompting for a screen again.
+            self._pipeline.stop()
+            self._pipeline = None
 
         area_id, self._active_area_id = self._active_area_id, None
         bridge = self.app.bridge.bridge
@@ -515,15 +521,36 @@ class SyncPage(Adw.Bin):
         if engine is None:
             return GLib.SOURCE_REMOVE
         stats = engine.stats
-        self._status_row.set_subtitle(
+        self._set_status(
             f"Mirroring · {stats.measured_fps:.0f} fps · "
-            f"{len(engine.mapper.channels)} lights"
+            f"{len(engine.mapper.channels)} lights",
+            busy=False,
         )
         return GLib.SOURCE_CONTINUE
 
     def _set_status(self, message: str, busy: bool) -> None:
         self._status_row.set_subtitle(message)
         self._spinner.set_visible(busy)
+        if self.on_state_change is not None:
+            self.on_state_change()
+
+    # -- external control --------------------------------------------------
+
+    @property
+    def mirroring(self) -> bool:
+        """True while mirroring is running or coming up."""
+        return self._engine is not None or self._starting
+
+    @property
+    def can_mirror(self) -> bool:
+        return bool(self._areas)
+
+    def set_mirroring(self, active: bool) -> None:
+        """Start or stop mirroring from outside, e.g. the tray menu."""
+        self._toggle.set_active(active)
+
+    def status_text(self) -> str:
+        return str(self._status_row.get_subtitle() or "")
 
     def _fail(self, message: str) -> None:
         _LOGGER.warning("mirroring failed: %s", message)

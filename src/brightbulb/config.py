@@ -79,6 +79,13 @@ class SyncSettings:
 class Settings:
     bridge_id: str | None = None
     bridge_host: str | None = None
+    # Closing the window hides it to the tray instead of quitting, so screen
+    # mirroring survives. Ignored when no tray host accepted our icon -- hiding
+    # to a tray that is not there would leave no way back.
+    close_to_tray: bool = True
+    # Whether the "still running in the tray" notification has been shown. It is
+    # only useful the first time; after that it is noise.
+    tray_hint_shown: bool = False
     sync: SyncSettings = field(default_factory=SyncSettings)
 
     @classmethod

@@ -37,6 +37,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         self.app = application
         self.toasts = Adw.ToastOverlay()
+        self._torn_down = False
 
         self._lights_page = self._build_lights_page()
 
@@ -167,20 +168,41 @@ class MainWindow(Adw.ApplicationWindow):
         self.app.connect_bridge()
 
     def _on_close(self, *_: object) -> bool:
+        if self.app.can_hide_to_tray():
+            # Hide rather than destroy: mirroring keeps running, and every
+            # widget keeps its state for when the window comes back.
+            self.app.hide_to_tray()
+            return True
+
         # Release the entertainment area and the portal session before the
         # window goes away, or the area stays locked against other Hue apps.
+        self.teardown()
+        return False
+
+    def teardown(self) -> None:
+        """Release everything the window owns. Safe to call twice."""
+        if self._torn_down:
+            return
+        self._torn_down = True
         self.sync_page.shutdown()
         self._unsubscribe()
         self._unsubscribe_changes()
-        return False
 
     # -- chrome ------------------------------------------------------------
 
     def _menu_button(self) -> Gtk.MenuButton:
         menu = Gio.Menu()
         menu.append("Connect a Bridge…", "app.pair")
-        menu.append("About BrightBulb", "app.about")
-        menu.append("Quit", "app.quit")
+
+        tray = Gio.Menu()
+        tray.append("Minimize to Tray", "app.hide")
+        tray.append("Close to Tray", "app.close-to-tray")
+        menu.append_section(None, tray)
+
+        rest = Gio.Menu()
+        rest.append("About BrightBulb", "app.about")
+        rest.append("Quit", "app.quit")
+        menu.append_section(None, rest)
         return Gtk.MenuButton(icon_name="open-menu-symbolic", menu_model=menu,
                               tooltip_text="Main menu")
 

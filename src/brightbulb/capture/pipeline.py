@@ -88,6 +88,15 @@ class CapturePipeline:
             raise RuntimeError("could not start the capture pipeline")
 
     def stop(self) -> None:
+        """Tear the pipeline down. The portal session and its fd stay valid.
+
+        There is deliberately no pause/resume pair. ``pipewiresrc`` does not
+        come back from ``PAUSED``: it goes quiet as expected and then delivers
+        nothing at all once set back to ``PLAYING``, so mirroring restarted that
+        way sits at 0 fps forever. Building a fresh pipeline on the same fd
+        costs nothing noticeable and leaves the portal session untouched, so the
+        user is still never re-prompted.
+        """
         pipeline, self._pipeline = self._pipeline, None
         if pipeline is None:
             return
@@ -97,29 +106,6 @@ class CapturePipeline:
             self._watch_id = None
         bus.remove_signal_watch()
         pipeline.set_state(Gst.State.NULL)
-
-    def set_frame_callback(self, on_frame: FrameCallback) -> None:
-        """Redirect frames to a new consumer.
-
-        Used when mirroring restarts with a fresh engine but the same portal
-        session, which is what keeps the user from being prompted again.
-        """
-        self._on_frame = on_frame
-
-    def pause(self) -> None:
-        """Stop delivering frames without giving up the portal session.
-
-        Tearing the pipeline down would mean re-negotiating with the portal to
-        resume, and on compositors that do not issue restore tokens (Hyprland
-        among them) that means prompting the user again. Pausing keeps the
-        session, so toggling mirroring costs nothing.
-        """
-        if self._pipeline is not None:
-            self._pipeline.set_state(Gst.State.PAUSED)
-
-    def resume(self) -> None:
-        if self._pipeline is not None:
-            self._pipeline.set_state(Gst.State.PLAYING)
 
     @property
     def running(self) -> bool:
