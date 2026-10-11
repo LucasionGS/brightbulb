@@ -1,0 +1,18 @@
+{
+  "bridge_id": "c42996ca8b7a",
+  "bridge_host": "192.168.1.69",
+  "close_to_tray": true,
+  "tray_hint_shown": true,
+  "sync": {
+    "entertainment_id": "769f2d58-23ed-442e-9579-4921bc53310d",
+    "grid_width": 64,
+    "grid_height": 36,
+    "target_fps": 60,
+    "brightness": 1.5,
+    "saturation": 2.5,
+    "attack": 0.7022388059701492,
+    "decay": 0.1755597014925373,
+    "screen_at_positive_y": false,
+    "screencast_restore_token": null
+  }
+}

@@ -18,10 +18,17 @@ export default tseslint.config(
     languageOptions: { globals: globals.node },
   },
   {
+    files: ["**/*.cjs"],
+    languageOptions: { globals: globals.node, sourceType: "commonjs" },
+    rules: { "@typescript-eslint/no-require-imports": "off" },
+  },
+  {
     rules: {
       "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
       // Companion namespaces holding a class's related types are the house style.
       "@typescript-eslint/no-namespace": "off",
+      // So are typed events: a class merged with an interface of emit/on overloads.
+      "@typescript-eslint/no-unsafe-declaration-merging": "off",
     },
   },
 );

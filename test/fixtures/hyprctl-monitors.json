@@ -1,0 +1,41 @@
+[
+  {
+    "name": "DP-1",
+    "description": "BNQ ZOWIE XL LCD SERIAL0000",
+    "make": "BNQ",
+    "model": "ZOWIE XL LCD",
+    "width": 1920,
+    "height": 1080,
+    "x": 3000,
+    "y": 1080,
+    "focused": true,
+    "transform": 0,
+    "disabled": false
+  },
+  {
+    "name": "DP-2",
+    "description": "Acer Technologies Acer B246HYL SERIAL0000",
+    "make": "Acer Technologies",
+    "model": "Acer B246HYL",
+    "width": 1920,
+    "height": 1080,
+    "x": 0,
+    "y": 630,
+    "focused": false,
+    "transform": 1,
+    "disabled": false
+  },
+  {
+    "name": "DP-3",
+    "description": "ASUSTek COMPUTER INC XG258 SERIAL0000",
+    "make": "ASUSTek COMPUTER INC",
+    "model": "XG258",
+    "width": 1920,
+    "height": 1080,
+    "x": 1080,
+    "y": 1440,
+    "focused": false,
+    "transform": 0,
+    "disabled": false
+  }
+]
