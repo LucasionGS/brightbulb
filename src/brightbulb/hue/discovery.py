@@ -21,14 +21,18 @@ import logging
 from dataclasses import dataclass
 from typing import Literal
 
-from aiohttp import ClientSession
-from aiohue.discovery import discover_bridge, discover_nupnp
+from aiohttp import ClientConnectionError, ClientError, ClientSession, ClientTimeout
+from aiohue.discovery import is_v2_bridge
+from aiohue.util import normalize_bridge_id
 from zeroconf import ServiceStateChange, Zeroconf
 from zeroconf.asyncio import AsyncServiceBrowser, AsyncServiceInfo, AsyncZeroconf
 
 _LOGGER = logging.getLogger(__name__)
 
 HUE_MDNS_SERVICE = "_hue._tcp.local."
+URL_NUPNP = "https://discovery.meethue.com/"
+
+_PROBE_TIMEOUT = ClientTimeout(total=10)
 
 Source = Literal["mdns", "cloud", "manual"]
 
@@ -95,13 +99,18 @@ async def discover_cloud() -> list[DiscoveredBridge]:
     and only with the user's knowledge.
     """
     try:
-        found = await discover_nupnp()
+        async with ClientSession() as session, session.get(
+            URL_NUPNP, timeout=ClientTimeout(total=30)
+        ) as resp:
+            resp.raise_for_status()
+            items = await resp.json()
+        hosts = sorted({str(item["internalipaddress"]) for item in items})
     except Exception:
         _LOGGER.warning("cloud discovery failed", exc_info=True)
         return []
-    return [
-        DiscoveredBridge(b.host, b.id, b.supports_v2, "cloud") for b in found
-    ]
+    # The endpoint can list bridges that are not on this network (or no longer
+    # exist), so each one is confirmed like any other candidate.
+    return await _verify_all(hosts, "cloud")
 
 
 async def discover_manual(host: str) -> DiscoveredBridge:
@@ -109,8 +118,8 @@ async def discover_manual(host: str) -> DiscoveredBridge:
 
     Raises whatever aiohttp raises when nothing answers.
     """
-    bridge = await discover_bridge(host)
-    return DiscoveredBridge(bridge.host, bridge.id, bridge.supports_v2, "manual")
+    async with ClientSession() as session:
+        return await probe_bridge(host, session, "manual")
 
 
 async def discover(timeout: float = 5.0, allow_cloud: bool = False) -> list[DiscoveredBridge]:
@@ -137,7 +146,7 @@ async def _verify_all(hosts: list[str], source: Source) -> list[DiscoveredBridge
 
     async with ClientSession() as session:
         results = await asyncio.gather(
-            *(discover_bridge(host, session) for host in hosts),
+            *(probe_bridge(host, session, source) for host in hosts),
             return_exceptions=True,
         )
 
@@ -146,7 +155,38 @@ async def _verify_all(hosts: list[str], source: Source) -> list[DiscoveredBridge
         if isinstance(result, BaseException):
             _LOGGER.debug("%s did not answer as a Hue bridge: %s", host, result)
             continue
-        by_id.setdefault(
-            result.id, DiscoveredBridge(result.host, result.id, result.supports_v2, source)
-        )
+        by_id.setdefault(result.bridge_id, result)
     return list(by_id.values())
+
+
+async def probe_bridge(host: str, session: ClientSession, source: Source) -> DiscoveredBridge:
+    """Ask ``host`` for its unauthenticated config and return it as a bridge.
+
+    Not ``aiohue.discovery.discover_bridge``: that only ever requests
+    ``http://<host>/api/config``, and the Bridge Pro (and bridges with plain
+    http turned off) refuse it outright, so they could never be discovered.
+    https is tried first, with verification disabled because the bridge serves
+    a self-signed certificate; plain http remains as a fallback for old firmware.
+    """
+    last_error: Exception | None = None
+    for scheme in ("https", "http"):
+        try:
+            async with session.get(
+                f"{scheme}://{host}/api/config", ssl=False, timeout=_PROBE_TIMEOUT
+            ) as resp:
+                resp.raise_for_status()
+                data = await resp.json(content_type=None)
+        except (ClientError, TimeoutError, ValueError) as err:  # retried on the next scheme
+            last_error = err
+            _LOGGER.debug("probing %s over %s failed: %s", host, scheme, err)
+            continue
+
+        if not isinstance(data, dict) or "bridgeid" not in data:
+            # Some emulators answer this endpoint sloppily; they are not bridges.
+            raise ClientConnectionError(f"{host} answered, but not as a Hue bridge")
+
+        supports_v2 = await is_v2_bridge(host, session)
+        return DiscoveredBridge(host, normalize_bridge_id(data["bridgeid"]), supports_v2, source)
+
+    assert last_error is not None
+    raise last_error
