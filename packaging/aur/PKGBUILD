@@ -6,7 +6,7 @@ _electron=electron43
 # Placeholder: aur-publish.sh patches this to the real r<count>.<hash> before
 # generating .SRCINFO. Keep it in the r-scheme; a bare 2.0.0 would sort *newer*
 # than every r-version if it ever reached the AUR unpatched.
-pkgver=r0.0000000
+pkgver=r3.a8a410e
 pkgrel=1
 pkgdesc="Open source Philips Hue control center with screen mirroring (git)"
 arch=('x86_64' 'aarch64')
@@ -26,16 +26,13 @@ optdepends=(
 )
 provides=("$_pkgname")
 conflicts=("$_pkgname")
-source=("$_pkgname::git+https://github.com/LucasionGS/brightbulb.git")
+# v2 lives on its own branch until it is merged; drop "#branch=v2" after that.
+source=("$_pkgname::git+https://github.com/LucasionGS/brightbulb.git#branch=v2")
 sha256sums=('SKIP')
 
 pkgver() {
-    cd "$srcdir/$_pkgname"
-    if git describe --long --tags >/dev/null 2>&1; then
-        git describe --long --tags | sed 's/^v//;s/\([^-]*-g\)/r\1/;s/-/./g'
-    else
-        printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
-    fi
+    cd "$srcdir/brightbulb"
+    printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short=7 HEAD)"
 }
 
 build() {
