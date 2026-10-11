@@ -1,0 +1,193 @@
+.bb-titlebar {
+  display: flex;
+  align-items: center;
+  gap: var(--bb-space-4);
+  height: var(--bb-titlebar-height);
+  padding: 0 var(--bb-space-2) 0 var(--bb-space-5);
+  background: var(--bb-bg);
+  border-bottom: 1px solid var(--bb-border);
+  -webkit-app-region: drag;
+  flex-shrink: 0;
+
+  button {
+    -webkit-app-region: no-drag;
+  }
+
+  &__brand {
+    display: flex;
+    align-items: center;
+    gap: var(--bb-space-2);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    flex-shrink: 0;
+  }
+
+  &__logo {
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 9px;
+    background: var(--bb-accent-gradient);
+    color: var(--bb-accent-contrast);
+    box-shadow: 0 0 16px -2px rgb(var(--bb-accent-rgb) / 0.6);
+  }
+
+  &__tabs {
+    display: flex;
+    gap: 2px;
+    margin: 0 auto;
+    padding: 4px;
+    border-radius: var(--bb-radius-pill);
+    background: var(--bb-surface);
+    border: 1px solid var(--bb-border);
+
+    @media (max-width: 720px) {
+      display: none;
+    }
+  }
+
+  &__tab {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--bb-space-2);
+    height: 34px;
+    padding: 0 var(--bb-space-4);
+    border: none;
+    border-radius: var(--bb-radius-pill);
+    background: transparent;
+    color: var(--bb-text-muted);
+    font-weight: 600;
+    font-size: var(--bb-text-sm);
+    transition: background var(--bb-duration-fast), color var(--bb-duration-fast);
+
+    &:hover {
+      color: var(--bb-text);
+    }
+
+    &--active {
+      background: var(--bb-surface-active);
+      color: var(--bb-text);
+      box-shadow: var(--bb-shadow-sm);
+    }
+  }
+
+  &__live {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--bb-accent);
+    box-shadow: 0 0 8px var(--bb-accent);
+    animation: bb-blink 1.6s ease-in-out infinite;
+  }
+
+  &__end {
+    display: flex;
+    align-items: center;
+    gap: var(--bb-space-2);
+    margin-left: auto;
+  }
+
+  &__status {
+    display: flex;
+    align-items: center;
+    gap: var(--bb-space-2);
+    height: 30px;
+    padding: 0 var(--bb-space-3);
+    border-radius: var(--bb-radius-pill);
+    border: 1px solid var(--bb-border);
+    background: var(--bb-surface);
+    font-size: var(--bb-text-xs);
+    font-weight: 600;
+    color: var(--bb-text-muted);
+
+    @media (max-width: 480px) {
+      .bb-titlebar__status-text {
+        display: none;
+      }
+    }
+  }
+
+  &__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--bb-text-dim);
+
+    .bb-titlebar__status--connected & {
+      background: var(--bb-success);
+      box-shadow: 0 0 8px var(--bb-success);
+    }
+
+    .bb-titlebar__status--connecting & {
+      background: var(--bb-warning);
+      animation: bb-blink 1s ease-in-out infinite;
+    }
+
+    .bb-titlebar__status--error &,
+    .bb-titlebar__status--unauthorized & {
+      background: var(--bb-danger);
+    }
+  }
+
+  &__controls {
+    display: flex;
+
+    button {
+      display: grid;
+      place-items: center;
+      width: 40px;
+      height: 34px;
+      border: none;
+      border-radius: var(--bb-radius-sm);
+      background: transparent;
+      color: var(--bb-text-muted);
+
+      &:hover {
+        background: var(--bb-surface-2);
+        color: var(--bb-text);
+      }
+    }
+  }
+
+  &__close:hover {
+    background: var(--bb-danger) !important;
+    color: #fff !important;
+  }
+}
+
+.bb-bottomnav {
+  display: none;
+  flex-shrink: 0;
+  border-top: 1px solid var(--bb-border);
+  background: var(--bb-bg-raised);
+
+  @media (max-width: 720px) {
+    display: flex;
+  }
+
+  &__tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: var(--bb-space-2) 0 var(--bb-space-3);
+    border: none;
+    background: none;
+    color: var(--bb-text-dim);
+    font-size: var(--bb-text-xs);
+    font-weight: 600;
+
+    &--active {
+      color: var(--bb-accent);
+    }
+  }
+}
+
+@keyframes bb-blink {
+  50% {
+    opacity: 0.35;
+  }
+}

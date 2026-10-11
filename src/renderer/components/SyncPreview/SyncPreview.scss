@@ -1,0 +1,63 @@
+.bb-preview {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: var(--bb-space-4);
+
+  @media (max-width: 760px) {
+    grid-template-columns: 1fr;
+  }
+
+  figure {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--bb-space-2);
+  }
+
+  figcaption {
+    font-size: var(--bb-text-xs);
+    color: var(--bb-text-dim);
+  }
+
+  &__screen canvas {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: var(--bb-radius-md);
+    background: var(--bb-bg-raised);
+    // Smoothly upscaled: the lights see averages, not pixels.
+    image-rendering: auto;
+    box-shadow: inset 0 0 0 1px var(--bb-border);
+  }
+
+  &__room {
+    position: relative;
+    aspect-ratio: 1;
+    max-height: 260px;
+    border-radius: var(--bb-radius-md);
+    background:
+      radial-gradient(circle at 50% 50%, rgb(255 255 255 / 0.03), transparent 70%),
+      var(--bb-bg-raised);
+    box-shadow: inset 0 0 0 1px var(--bb-border);
+  }
+
+  &__tv {
+    position: absolute;
+    top: 6%;
+    left: 30%;
+    width: 40%;
+    height: 4%;
+    border-radius: 3px;
+    background: var(--bb-text-dim);
+  }
+
+  &__dot {
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    margin: -11px 0 0 -11px;
+    border-radius: 50%;
+    background: var(--bb-dot);
+    box-shadow: 0 0 22px 4px var(--bb-dot), 0 0 0 2px rgb(0 0 0 / 0.4);
+    transition: background 90ms linear, box-shadow 90ms linear;
+  }
+}

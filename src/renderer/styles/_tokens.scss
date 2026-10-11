@@ -1,0 +1,73 @@
+// Design tokens. Everything visual reads from these variables, so the look can
+// be tuned in one place. Dark by design: the colour comes from the lights.
+:root {
+  // Surfaces, from the window background up
+  --bb-bg: #0b0d12;
+  --bb-bg-raised: #10131a;
+  --bb-surface: #161a23;
+  --bb-surface-2: #1c212c;
+  --bb-surface-hover: #222836;
+  --bb-surface-active: #2a3142;
+  --bb-border: rgb(255 255 255 / 0.06);
+  --bb-border-strong: rgb(255 255 255 / 0.12);
+
+  // Text
+  --bb-text: #f3f5f9;
+  --bb-text-muted: #9aa2b5;
+  --bb-text-dim: #646c80;
+
+  // Accent: warm light, the colour of a bulb at 2700 K
+  --bb-accent: #ffc35c;
+  --bb-accent-strong: #ffad33;
+  --bb-accent-rgb: 255 195 92;
+  --bb-accent-contrast: #24190a;
+  --bb-accent-gradient: linear-gradient(135deg, #ffd88a 0%, #ffad33 55%, #ff8a3d 100%);
+
+  // Status
+  --bb-success: #4fd18b;
+  --bb-warning: #ffb547;
+  --bb-danger: #ff6370;
+  --bb-danger-rgb: 255 99 112;
+
+  // Shape
+  --bb-radius-xl: 28px;
+  --bb-radius-lg: 22px;
+  --bb-radius-md: 16px;
+  --bb-radius-sm: 11px;
+  --bb-radius-pill: 999px;
+
+  // Spacing scale
+  --bb-space-1: 4px;
+  --bb-space-2: 8px;
+  --bb-space-3: 12px;
+  --bb-space-4: 16px;
+  --bb-space-5: 20px;
+  --bb-space-6: 24px;
+  --bb-space-8: 32px;
+  --bb-space-10: 40px;
+
+  // Type
+  --bb-font: "Inter", "IBM Plex Sans", "Cantarell", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --bb-font-mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace, monospace;
+  --bb-text-xs: 11.5px;
+  --bb-text-sm: 13px;
+  --bb-text-md: 14.5px;
+  --bb-text-lg: 17px;
+  --bb-text-xl: 22px;
+  --bb-text-2xl: 30px;
+
+  // Depth
+  --bb-shadow-sm: 0 1px 2px rgb(0 0 0 / 0.3);
+  --bb-shadow-md: 0 8px 24px rgb(0 0 0 / 0.35);
+  --bb-shadow-lg: 0 24px 64px rgb(0 0 0 / 0.5);
+
+  // Motion
+  --bb-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --bb-duration-fast: 120ms;
+  --bb-duration: 220ms;
+  --bb-duration-slow: 420ms;
+
+  // Layout
+  --bb-titlebar-height: 56px;
+  --bb-content-width: 1180px;
+}

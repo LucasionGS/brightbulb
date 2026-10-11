@@ -24,7 +24,8 @@ export class PairingController extends EventEmitter {
    * Look for bridges on the network. mDNS first, the cloud only if that finds nothing.
    */
   public async search(): Promise<void> {
-    this.cancel();
+    this._abort?.abort();
+    this._abort = null;
     const id = ++this._searchId;
     this._update({ stage: "searching", candidates: [], selected: null, error: null });
     const candidates = await discover(true).catch((error) => {
@@ -85,7 +86,8 @@ export class PairingController extends EventEmitter {
   }
 
   /**
-   * Abort a running pairing attempt and go back to the list.
+   * Abort a running pairing attempt and go back to the list; outside the link
+   * step, leave onboarding altogether.
    */
   public cancel(): void {
     if (this._abort) {
@@ -93,13 +95,17 @@ export class PairingController extends EventEmitter {
       this._abort = null;
       this._update({ stage: this._vm.candidates.length ? "choose" : "idle", selected: null });
     }
+    else if (this._vm.stage !== "idle") {
+      this.reset();
+    }
   }
 
   /**
    * Leave onboarding entirely.
    */
   public reset(): void {
-    this.cancel();
+    this._abort?.abort();
+    this._abort = null;
     this._searchId++;
     this._update({ stage: "idle", candidates: [], selected: null, error: null });
   }

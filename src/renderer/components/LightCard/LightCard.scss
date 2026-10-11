@@ -1,0 +1,92 @@
+.bb-light {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--bb-space-3);
+  padding: var(--bb-space-4) var(--bb-space-4) var(--bb-space-3);
+  border-radius: var(--bb-radius-lg);
+  border: 1px solid var(--bb-border);
+  background: var(--bb-surface);
+  overflow: hidden;
+  isolation: isolate;
+  transition: background var(--bb-duration-slow) var(--bb-ease), border-color var(--bb-duration), transform var(--bb-duration-fast) var(--bb-ease), box-shadow var(--bb-duration);
+
+  // The glow lives on a layer so it can fade in and out smoothly.
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background:
+      radial-gradient(120% 140% at 0% 0%, var(--bb-light-tint-soft), transparent 60%),
+      linear-gradient(160deg, var(--bb-light-tint-faint), transparent 70%);
+    opacity: 0;
+    transition: opacity var(--bb-duration-slow) var(--bb-ease);
+  }
+
+  &--on {
+    border-color: color-mix(in srgb, var(--bb-light-tint) 28%, transparent);
+    box-shadow: 0 14px 40px -24px var(--bb-light-tint);
+
+    &::before {
+      opacity: 1;
+    }
+  }
+
+  &--clickable {
+    cursor: pointer;
+
+    &:hover {
+      transform: translateY(-1px);
+      border-color: var(--bb-border-strong);
+    }
+  }
+
+  &__top {
+    display: flex;
+    align-items: center;
+    gap: var(--bb-space-3);
+  }
+
+  &__icon {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+    background: var(--bb-surface-2);
+    color: var(--bb-text-dim);
+    transition: background var(--bb-duration), color var(--bb-duration), box-shadow var(--bb-duration);
+
+    .bb-light--on & {
+      background: var(--bb-light-tint);
+      color: rgb(0 0 0 / 0.72);
+      box-shadow: 0 0 22px -4px var(--bb-light-tint);
+    }
+  }
+
+  &__text {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__name {
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__subtitle {
+    display: flex;
+    align-items: center;
+    gap: var(--bb-space-1);
+    font-size: var(--bb-text-sm);
+    color: var(--bb-text-muted);
+
+    svg {
+      color: var(--bb-warning);
+    }
+  }
+}

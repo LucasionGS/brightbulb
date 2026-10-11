@@ -27,6 +27,14 @@ export function createMainWindow(): BrowserWindow {
 
   window.once("ready-to-show", () => window.show());
 
+  if (MAIN_WINDOW_VITE_DEV_SERVER_URL || process.env.BRIGHTBULB_DEBUG) {
+    // Renderer problems show up in the terminal during development.
+    window.webContents.on("console-message", ({ level, message, sourceId, lineNumber }) => {
+      if (level !== "debug") console.log(`[renderer:${level}] ${message} (${sourceId}:${lineNumber})`);
+    });
+    window.webContents.on("preload-error", (_event, path, error) => console.error(`[preload] ${path}:`, error));
+  }
+
   // Links open in the browser, never inside the app.
   window.webContents.setWindowOpenHandler(({ url }) => {
     if (/^https?:/.test(url)) void shell.openExternal(url);

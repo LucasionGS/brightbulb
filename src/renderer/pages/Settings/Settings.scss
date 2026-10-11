@@ -1,0 +1,117 @@
+.bb-settings {
+  &__section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--bb-space-4);
+  }
+
+  &__bridge {
+    display: flex;
+    align-items: center;
+    gap: var(--bb-space-4);
+  }
+
+  &__bridge-icon {
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 16px;
+    background: var(--bb-surface-2);
+    color: var(--bb-accent);
+  }
+
+  &__bridge-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  &__bridge-name {
+    display: flex;
+    align-items: center;
+    gap: var(--bb-space-2);
+    font-size: var(--bb-text-lg);
+    font-weight: 650;
+  }
+
+  &__detail {
+    color: var(--bb-text-muted);
+    font-size: var(--bb-text-sm);
+    user-select: text;
+  }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--bb-space-2);
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--bb-space-4);
+  }
+
+  &__hint {
+    font-size: var(--bb-text-sm);
+  }
+
+  &__backends {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+
+    li {
+      display: flex;
+      flex-direction: column;
+      gap: var(--bb-space-1);
+      padding: var(--bb-space-3) 0;
+      border-top: 1px solid var(--bb-border);
+    }
+  }
+
+  &__backend-head {
+    display: flex;
+    align-items: center;
+    gap: var(--bb-space-2);
+    font-weight: 600;
+  }
+
+  &__command {
+    display: flex;
+    align-items: center;
+    gap: var(--bb-space-2);
+    width: fit-content;
+    max-width: 100%;
+    padding: var(--bb-space-1) var(--bb-space-1) var(--bb-space-1) var(--bb-space-3);
+    border-radius: var(--bb-radius-sm);
+    background: var(--bb-bg-raised);
+    border: 1px solid var(--bb-border);
+
+    code {
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+  }
+
+  &__security {
+    display: flex;
+    gap: var(--bb-space-3);
+    align-items: flex-start;
+  }
+
+  &__ok {
+    color: var(--bb-success);
+    flex-shrink: 0;
+  }
+
+  &__warn {
+    color: var(--bb-warning);
+    flex-shrink: 0;
+  }
+}

@@ -1,0 +1,29 @@
+.bb-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--bb-space-3);
+  margin: var(--bb-space-4) auto 0;
+  width: min(var(--bb-content-width), calc(100% - 2 * var(--bb-space-8)));
+  padding: var(--bb-space-3) var(--bb-space-4);
+  border-radius: var(--bb-radius-md);
+  background: var(--bb-surface);
+  border: 1px solid var(--bb-border);
+  color: var(--bb-text-muted);
+  font-size: var(--bb-text-sm);
+
+  &--problem {
+    background: rgb(var(--bb-danger-rgb) / 0.08);
+    border-color: rgb(var(--bb-danger-rgb) / 0.25);
+    color: var(--bb-text);
+
+    > svg {
+      color: var(--bb-danger);
+      flex-shrink: 0;
+    }
+  }
+
+  &__text {
+    flex: 1;
+    user-select: text;
+  }
+}

@@ -12,6 +12,8 @@ import { createMainWindow, quitApp, showWindow } from "./window";
 
 if (process.env.BRIGHTBULB_DEBUG) {
   app.commandLine.appendSwitch("enable-logging");
+  // Lets DevTools (chrome://inspect) attach to the windows.
+  app.commandLine.appendSwitch("remote-debugging-port", process.env.BRIGHTBULB_DEBUG_PORT ?? "9229");
 }
 
 // Chromium's own caches stay out of ~/.config/brightbulb, which only holds

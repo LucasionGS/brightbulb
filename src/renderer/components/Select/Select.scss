@@ -1,0 +1,103 @@
+.bb-select {
+  &__trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--bb-space-3);
+    width: 100%;
+    min-height: 44px;
+    padding: 0 var(--bb-space-3) 0 var(--bb-space-4);
+    border-radius: var(--bb-radius-sm);
+    border: 1px solid var(--bb-border-strong);
+    background: var(--bb-bg-raised);
+    text-align: left;
+    transition: border-color var(--bb-duration-fast);
+
+    &:hover:not([data-disabled]) {
+      border-color: rgb(255 255 255 / 0.2);
+    }
+
+    &[data-popup-open] {
+      border-color: rgb(var(--bb-accent-rgb) / 0.6);
+    }
+
+    &[data-disabled] {
+      opacity: 0.45;
+      cursor: default;
+    }
+  }
+
+  &__value {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    &[data-placeholder] {
+      color: var(--bb-text-dim);
+    }
+  }
+
+  &__icon {
+    display: flex;
+    color: var(--bb-text-muted);
+  }
+
+  &__positioner {
+    z-index: 60;
+    outline: none;
+  }
+
+  &__popup {
+    min-width: var(--anchor-width);
+    max-height: min(360px, var(--available-height));
+    overflow-y: auto;
+    padding: var(--bb-space-1);
+    border-radius: var(--bb-radius-md);
+    border: 1px solid var(--bb-border-strong);
+    background: var(--bb-surface-2);
+    box-shadow: var(--bb-shadow-lg);
+    transform-origin: var(--transform-origin);
+    transition: opacity var(--bb-duration-fast), transform var(--bb-duration-fast) var(--bb-ease);
+
+    &[data-starting-style],
+    &[data-ending-style] {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+  }
+
+  &__item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--bb-space-3);
+    padding: var(--bb-space-2) var(--bb-space-3);
+    border-radius: var(--bb-radius-sm);
+    cursor: pointer;
+    outline: none;
+
+    &[data-highlighted] {
+      background: var(--bb-surface-hover);
+    }
+
+    &[data-disabled] {
+      opacity: 0.45;
+      cursor: default;
+    }
+  }
+
+  &__item-text {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__hint {
+    font-size: var(--bb-text-xs);
+    color: var(--bb-text-dim);
+  }
+
+  &__check {
+    color: var(--bb-accent);
+    display: flex;
+  }
+}

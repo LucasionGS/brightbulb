@@ -1,0 +1,55 @@
+.bb-scene {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  min-height: 112px;
+  padding: var(--bb-space-4);
+  border: none;
+  border-radius: var(--bb-radius-lg);
+  background: var(--bb-scene-gradient);
+  text-align: left;
+  overflow: hidden;
+  isolation: isolate;
+  transition: transform var(--bb-duration) var(--bb-ease), box-shadow var(--bb-duration);
+
+  // Darken the bottom so the name is readable on any palette.
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(180deg, transparent 30%, rgb(0 0 0 / 0.55));
+  }
+
+  &:hover {
+    transform: translateY(-2px) scale(1.01);
+    box-shadow: 0 16px 36px -18px rgb(0 0 0 / 0.8);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+
+  &--active {
+    box-shadow: 0 0 0 2px #fff, 0 16px 36px -18px rgb(0 0 0 / 0.8);
+  }
+
+  &__name {
+    font-weight: 650;
+    color: #fff;
+    text-shadow: 0 1px 6px rgb(0 0 0 / 0.5);
+  }
+
+  &__badge {
+    position: absolute;
+    top: var(--bb-space-3);
+    right: var(--bb-space-3);
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #fff;
+    color: #111;
+  }
+}

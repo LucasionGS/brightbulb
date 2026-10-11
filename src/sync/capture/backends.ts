@@ -74,7 +74,8 @@ export class WfRecorderBackend extends CaptureBackend {
         "-F", scaleFilter(request.width, request.height),
         "-c", "rawvideo",
         "-m", "rawvideo",
-        "-f", "/dev/stdout",
+        // Not /dev/stdout: Node hands children a socket, which ffmpeg cannot open() by path.
+        "-f", "pipe:1",
       ]]], request.width, request.height, onFrame, onExit);
     }, onExit);
   }
@@ -141,7 +142,7 @@ export class GsrBackend extends CaptureBackend {
           "-fm", "cfr",
           "-cursor", "no",
           "-keyint", "0.5",
-          "-o", "/dev/stdout",
+          "-o", "pipe:1",
         ]],
         [this.system.binaries.ffmpeg!, [
           "-hide_banner", "-loglevel", "info", "-nostats",
