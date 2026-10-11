@@ -136,6 +136,22 @@ export function selectSceneGroups(store: ResourceStore): SceneGroupVM[] {
 
 export function toSceneVM(scene: Clip.Scene, store: ResourceStore): SceneVM {
   const palette: RGB[] = [];
+  // Scenes made from a palette (most of Hue's own, and every dynamic one)
+  // carry their full colour set; it shows the scene better than the actions.
+  for (const entry of scene.palette?.color ?? []) {
+    if (palette.length >= PALETTE_SIZE) break;
+    const level = Math.max(0.35, (entry.dimming?.brightness ?? 100) / 100);
+    palette.push(xyToRgb([entry.color.xy.x, entry.color.xy.y], level));
+  }
+  for (const entry of scene.palette?.color_temperature ?? []) {
+    if (palette.length >= PALETTE_SIZE) break;
+    const level = Math.max(0.35, (entry.dimming?.brightness ?? 100) / 100);
+    palette.push(mirekToRgb(entry.color_temperature.mirek).map((c) => c * level) as RGB);
+  }
+  if (palette.length > 0) {
+    return { id: scene.id, name: scene.metadata?.name ?? "Scene", palette, active: isActive(scene) };
+  }
+
   for (const { target, action } of scene.actions ?? []) {
     if (palette.length >= PALETTE_SIZE) break;
     if (action.on && !action.on.on) continue;
@@ -152,13 +168,12 @@ export function toSceneVM(scene: Clip.Scene, store: ResourceStore): SceneVM {
       palette.push(PLAIN_WHITE.map((c) => c * level) as RGB);
     }
   }
+  return { id: scene.id, name: scene.metadata?.name ?? "Scene", palette, active: isActive(scene) };
+}
+
+function isActive(scene: Clip.Scene): boolean {
   const status = scene.status?.active;
-  return {
-    id: scene.id,
-    name: scene.metadata?.name ?? "Scene",
-    palette,
-    active: !!status && status !== "inactive",
-  };
+  return !!status && status !== "inactive";
 }
 
 /**
