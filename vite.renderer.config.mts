@@ -24,6 +24,24 @@ export default defineConfig(mergeConfig(baseConfig, {
   // invalidating each other's optimised deps.
   cacheDir: Path.resolve(import.meta.dirname, "node_modules/.vite/main_window"),
   plugins: [react(), devCsp()],
+  optimizeDeps: {
+    // Listed up front so the dev server bundles them in one go. Discovering
+    // them during the first page load re-optimises mid-load, leaving the page
+    // with mismatched React copies and a blank window.
+    include: [
+      "react",
+      "react/jsx-dev-runtime",
+      "react/jsx-runtime",
+      "react-dom",
+      "react-dom/client",
+      "lucide-react",
+      "@base-ui/react/alert-dialog",
+      "@base-ui/react/dialog",
+      "@base-ui/react/select",
+      "@base-ui/react/slider",
+      "@base-ui/react/switch",
+    ],
+  },
   build: {
     // Forge resolves its default outDir against `root`, which is not the repo root here.
     outDir: Path.resolve(import.meta.dirname, ".vite/renderer/main_window"),

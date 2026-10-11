@@ -1,4 +1,5 @@
 import Path from "node:path";
+import { pathToFileURL } from "node:url";
 import { BrowserWindow, Notification, shell } from "electron";
 import App from "./App";
 import Settings from "./Settings";
@@ -40,7 +41,14 @@ export function createMainWindow(): BrowserWindow {
     if (/^https?:/.test(url)) void shell.openExternal(url);
     return { action: "deny" };
   });
-  window.webContents.on("will-navigate", (event) => event.preventDefault());
+  // Reloading the app's own page is fine; Vite's dev server does exactly that
+  // at startup, and cancelling it leaves a half-unloaded, blank page. Anything
+  // else would replace the app with an arbitrary page, so it opens in the browser.
+  window.webContents.on("will-navigate", (event) => {
+    if (isAppUrl(event.url)) return;
+    event.preventDefault();
+    if (/^https?:/.test(event.url)) void shell.openExternal(event.url);
+  });
 
   window.on("close", (event) => {
     if (App.quitting) return;
@@ -53,13 +61,29 @@ export function createMainWindow(): BrowserWindow {
     }
   });
 
-  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-    void window.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
-  }
-  else {
-    void window.loadFile(Path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`));
-  }
+  void window.loadURL(appUrl());
   return window;
+}
+
+/**
+ * Where the main window's page lives: the Vite dev server, or the bundled file.
+ */
+function appUrl(): string {
+  return MAIN_WINDOW_VITE_DEV_SERVER_URL
+    || pathToFileURL(Path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`)).href;
+}
+
+/**
+ * Whether `url` is the app's own page (any path on the dev server, or the bundled file).
+ */
+function isAppUrl(url: string): boolean {
+  try {
+    const target = new URL(url);
+    const app = new URL(appUrl());
+    return target.protocol === "file:" ? target.pathname === app.pathname : target.origin === app.origin;
+  } catch {
+    return false;
+  }
 }
 
 /**
