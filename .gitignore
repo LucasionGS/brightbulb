@@ -1,17 +1,12 @@
-# Python
-__pycache__/
-*.py[cod]
-*.so
-.venv/
-dist/
-build/
-*.egg-info/
-.mypy_cache/
-.ruff_cache/
-.pytest_cache/
+# Node
+node_modules/
+.vite/
+out/
+dist-test/
 
-# Rust
-target/
+# Python (v1 leftovers in old checkouts)
+.venv/
+__pycache__/
 
 # Local state
 *.tmp
