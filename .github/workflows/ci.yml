@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [master, v2]
   pull_request:
   workflow_dispatch:
 
@@ -10,110 +10,62 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  # Keep uv from trying to manage its own interpreter; the GI bindings only
-  # exist for the system Python installed via apt.
-  UV_PYTHON_PREFERENCE: only-system
-
 jobs:
-  python:
+  check:
     name: Lint, type-check and test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-
-      # PyGObject, GStreamer and the GI typelibs come from the distro rather
-      # than PyPI, exactly as they do for end users.
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            python3-gi python3-gi-cairo gir1.2-gtk-4.0 gir1.2-adw-1 \
-            gir1.2-gstreamer-1.0 gir1.2-gst-plugins-base-1.0 gir1.2-secret-1 \
-            libgirepository-1.0-dev libcairo2-dev \
-            gstreamer1.0-plugins-base gstreamer1.0-pipewire \
-            libssl-dev pkg-config
-
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/setup-node@v5
         with:
-          enable-cache: true
+          node-version-file: .nvmrc
+          cache: npm
 
-      - name: Sync dependencies
-        run: uv venv --system-site-packages && uv sync
+      - name: Install dependencies
+        run: npm ci
+        env:
+          # Not needed to lint and test; the package job downloads it.
+          ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
 
-      - name: Ruff
-        run: uv run ruff check .
+      - name: ESLint
+        run: npm run lint
 
-      - name: Mypy
-        run: uv run mypy
+      - name: TypeScript
+        run: npm run typecheck
 
-      - name: Pytest
-        run: uv run pytest -q
-
-  rust:
-    name: Rust extension
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: crates/hue-stream
-    steps:
-      - uses: actions/checkout@v5
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy, rustfmt
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: crates/hue-stream
-
-      - name: Install OpenSSL headers
-        run: sudo apt-get update && sudo apt-get install -y libssl-dev pkg-config
-
-      - name: Format
-        run: cargo fmt --check
-
-      - name: Clippy
-        run: cargo clippy --release -- -D warnings
-
-      - name: Build
-        run: cargo build --release
+      - name: Tests
+        run: npm test
 
   package:
     name: Packaging (make install)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/setup-node@v5
         with:
-          enable-cache: true
+          node-version-file: .nvmrc
+          cache: npm
 
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            python3-gi gir1.2-gtk-4.0 gir1.2-adw-1 gir1.2-secret-1 \
-            libgirepository-1.0-dev libcairo2-dev libssl-dev pkg-config
+      # The path the AUR PKGBUILD takes: build app.asar, then install it with
+      # its launcher, desktop file, icon and licence into a staging root.
+      - name: Build
+        run: make build
 
-      - name: Sync build tooling
-        run: uv venv --system-site-packages && uv sync
-
-      # Proves the path the AUR PKGBUILD takes: two wheels built and unpacked
-      # into a staging root, with the desktop file, icon and licence in place.
       - name: make install into a staging root
-        run: |
-          PATH="$PWD/.venv/bin:$PATH" \
-            make install DESTDIR="$PWD/stage" PREFIX=/usr PYTHON="$PWD/.venv/bin/python"
+        run: make install DESTDIR="$PWD/stage" PREFIX=/usr ELECTRON=electron43
 
       - name: Verify the installed tree
         run: |
           set -eux
           test -x stage/usr/bin/brightbulb
+          grep -q 'exec electron43 /usr/lib/brightbulb/app.asar' stage/usr/bin/brightbulb
           test -f stage/usr/share/applications/io.github.brightbulb.BrightBulb.desktop
           test -f stage/usr/share/icons/hicolor/scalable/apps/io.github.brightbulb.BrightBulb.svg
           test -f stage/usr/share/licenses/brightbulb/LICENSE
-          ls stage/usr/lib/python3*/site-packages/brightbulb_dtls/*.abi3.so
-          PYTHONPATH="$(echo stage/usr/lib/python3*/site-packages)" \
-            python3 -c "import brightbulb_dtls; assert brightbulb_dtls.probe_psk_support()"
+          npx --yes @electron/asar list stage/usr/lib/brightbulb/app.asar > asar.txt
+          for f in main.cjs syncWorker.cjs preload.cjs capturePreload.cjs; do grep -q "/.vite/build/$f" asar.txt; done
+          grep -q "/.vite/renderer/main_window/index.html" asar.txt
+          grep -q "/.vite/renderer/capture_window/index.html" asar.txt
 
   pkgbuild:
     name: PKGBUILD sanity
@@ -122,14 +74,12 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Check PKGBUILDs parse and produce .SRCINFO
+      - name: Check the PKGBUILD parses and produces .SRCINFO
         run: |
           set -eux
           pacman -Sy --noconfirm --needed git
           # makepkg refuses to run as root, so do this as a normal user.
           useradd -m builder
           chown -R builder .
-          for dir in packaging/aur packaging/aur/python-aiohue packaging/aur/python-asyncio-throttle; do
-            su builder -c "cd '$dir' && makepkg --printsrcinfo > /dev/null"
-          done
+          su builder -c "cd packaging/aur && makepkg --printsrcinfo > /dev/null"
           bash -n packaging/aur/aur-publish.sh

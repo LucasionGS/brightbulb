@@ -4,7 +4,7 @@
   "version": "2.0.0-alpha.0",
   "private": true,
   "description": "Control Philips Hue lights and mirror your screen onto them",
-  "license": "GPL-3.0-only",
+  "license": "GPL-3.0-or-later",
   "author": "Lucasion",
   "homepage": "https://github.com/LucasionGS/brightbulb",
   "desktopName": "io.github.brightbulb.BrightBulb.desktop",

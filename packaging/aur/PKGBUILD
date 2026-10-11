@@ -2,8 +2,9 @@
 
 pkgname=brightbulb-git
 _pkgname=brightbulb
+_electron=electron43
 # Placeholder: aur-publish.sh patches this to the real r<count>.<hash> before
-# generating .SRCINFO. Keep it in the r-scheme — a bare 0.1.0 would sort *newer*
+# generating .SRCINFO. Keep it in the r-scheme; a bare 2.0.0 would sort *newer*
 # than every r-version if it ever reached the AUR unpatched.
 pkgver=r0.0000000
 pkgrel=1
@@ -11,37 +12,17 @@ pkgdesc="Open source Philips Hue control center with screen mirroring (git)"
 arch=('x86_64' 'aarch64')
 url="https://github.com/LucasionGS/brightbulb"
 license=('GPL-3.0-or-later')
-depends=(
-    'python'
-    'python-gobject'
-    'gtk4'
-    'libadwaita'
-    'gstreamer'
-    'gst-plugins-base'
-    'gst-plugin-pipewire'
-    'gst-python'
-    'libsecret'
-    'openssl'
-    'python-numpy'
-    'python-aiohttp'
-    'python-zeroconf'
-    'python-aiohue'
-    'xdg-desktop-portal'
-)
-makedepends=(
-    'git'
-    'rust'
-    'maturin'
-    'python-build'
-    'python-installer'
-    'python-hatchling'
-    'python-wheel'
-)
+depends=("$_electron")
+makedepends=('git' 'nodejs' 'npm')
 optdepends=(
-    'xdg-desktop-portal-hyprland: screen capture on Hyprland'
-    'xdg-desktop-portal-wlr: screen capture on wlroots compositors'
-    'xdg-desktop-portal-gnome: screen capture on GNOME'
-    'gnome-keyring: stores the bridge credentials in a keyring'
+    'wf-recorder: prompt-free screen capture on Hyprland, Sway and other wlroots compositors'
+    'gpu-screen-recorder: prompt-free screen capture on GNOME, KDE and any other desktop'
+    'ffmpeg: used by the gpu-screen-recorder and X11 capture methods'
+    'grim: faster screen thumbnails on wlroots compositors'
+    'xorg-xrandr: screen selection on X11'
+    'gnome-keyring: encrypts the bridge keys (any Secret Service provider works)'
+    'libsecret: imports bridge keys saved by BrightBulb 1.x'
+    'xdg-desktop-portal: last-resort screen capture that asks which screen to share'
 )
 provides=("$_pkgname")
 conflicts=("$_pkgname")
@@ -57,6 +38,13 @@ pkgver() {
     fi
 }
 
+build() {
+    cd "$srcdir/$_pkgname"
+    # The bundled Electron is only used to produce app.asar; the package runs
+    # it on the system $_electron instead.
+    make build
+}
+
 package() {
-    make -C "$srcdir/$_pkgname" DESTDIR="$pkgdir" PREFIX=/usr PKGNAME="$pkgname" install
+    make -C "$srcdir/$_pkgname" DESTDIR="$pkgdir" PREFIX=/usr ELECTRON="$_electron" install
 }

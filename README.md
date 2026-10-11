@@ -1,28 +1,26 @@
 # BrightBulb
 
-An open source Philips Hue control center for Linux — control your lights, and
-mirror your screen onto them in real time.
+Your Philips Hue lights, on your Linux desktop, and following whatever is on your screen. No "pick a screen to share" dialog every time you sit down.
 
-## Features
+## Key Features
 
-- **Discovery and pairing** over mDNS, with cloud discovery and manual IP entry
-  as fallbacks. Credentials are stored in your keyring.
-- **Light control** — power, brightness, colour and colour temperature, grouped
-  by room, with only the controls each lamp actually supports.
-- **Scenes**, grouped by the room they apply to, each previewing its palette.
-- **Screen mirroring** to a Hue entertainment area, mapping every light to the
-  part of your screen it physically sits next to.
-- **Live updates** from the CLIP v2 event stream, so the UI never polls.
-- **Runs from the system tray**, so mirroring keeps going with the window shut.
+- **Lights**: Every light, grouped by room, as a tile that glows in the light's own colour. Tap one for a colour wheel, warm-to-cool white and the classic Relax/Read/Concentrate/Energize presets.
+- **Scenes**: Your Hue scenes as palette tiles, with the active one marked. One tap applies it.
+- **Screen mirroring**: Streams your screen's colours to a Hue entertainment area at up to 60 fps. Each lamp follows the part of the screen it actually sits next to.
+- **No prompts**: Captures through wlroots screencopy, KMS or X11 instead of the screen-sharing portal, so mirroring just starts. Your compositor will stop asking you questions. Mostly.
+- **Pick your screen**: Live thumbnails of every monitor. Mirror a specific one or let it follow the focused screen.
+- **Live preview**: See what the lights see: the sampled screen next to a map of your entertainment area, every lamp in its live colour.
+- **Lives in the tray**: Close the window and mirroring carries on. Toggle it from the tray menu without opening anything.
+- **Works with the Bridge Pro**: Finds bridges over mDNS, the Hue cloud or a typed IP, and talks to them over HTTPS with the certificate pinned at pairing.
 
-## Requirements
+![The Lights page, with each tile tinted by its light's colour](docs/screenshots/lights.png)
+<sup>The Lights page. Each tile glows in its light's current colour.</sup>
 
-Linux with Wayland (X11 works, but screen capture is developed against the
-xdg-desktop-portal ScreenCast interface). BrightBulb uses your system's
-PyGObject and GStreamer rather than bundling them.
+![The details sheet for one light](docs/screenshots/light-details.png)
+<sup>Colour wheel, white temperature and presets for a single light.</sup>
 
-Screen mirroring needs a **v2 (square) Hue bridge** and an entertainment area
-containing colour-capable lights.
+![Scenes shown as gradient tiles](docs/screenshots/scenes.png)
+<sup>Scenes, drawn from their own palettes.</sup>
 
 ## Installing
 
@@ -32,114 +30,66 @@ containing colour-capable lights.
 paru -S brightbulb-git
 ```
 
-`aiohue` and `asyncio-throttle` are not in the official repositories, so
-BrightBulb also publishes `python-aiohue` and `python-asyncio-throttle`. Your
-AUR helper pulls them in automatically.
+Then install a capture tool for your desktop (see below). On Hyprland or Sway that is just `wf-recorder`.
 
 ### From source
 
 ```fish
-sudo pacman -S --needed python python-gobject gtk4 libadwaita \
-    gstreamer gst-plugins-base gst-plugin-pipewire gst-python \
-    libsecret openssl rust uv
-
-uv venv --system-site-packages   # PyGObject/GStreamer come from the system
-uv sync
-uv run brightbulb
+make
+sudo make install PREFIX=/usr/local ELECTRON=electron43
 ```
 
-Set `BRIGHTBULB_DEBUG=1` for verbose logging.
+`ELECTRON` is the Electron binary the launcher runs; it must be the same major version as in `package.json` (43). Debian and Ubuntu users can point it at any Electron 43 build.
+
+## Screen capture
+
+BrightBulb picks the first method that works on your system. You can see what it found, and what to install, under **Settings → Screen capture**, and force one under **Sync → Advanced**.
+
+| Method | Works on | Needs |
+|---|---|---|
+| wlroots screencopy | Hyprland, Sway, river, niri and other wlroots compositors | `wf-recorder` |
+| KMS | Any desktop (GNOME, KDE, …), any GPU including NVIDIA | `gpu-screen-recorder` and `ffmpeg` |
+| X11 | X11 sessions | `ffmpeg` |
+| ffmpeg kmsgrab (experimental) | AMD and Intel | `ffmpeg` with `cap_sys_admin` |
+| Screen-sharing portal | Everywhere, as a last resort | Asks which screen every time |
 
 ## Using it
 
-Press the round button on your bridge when BrightBulb asks, and it pairs
-itself. **Ctrl+1/2/3** switch between Lights, Scenes and Sync.
+Open BrightBulb, press **Find my bridge**, then press the round button on top of the bridge when asked. That's it. **Ctrl+1–4** switch between Lights, Scenes, Sync and Settings.
 
-### The tray icon
+### Mirroring
 
-Closing the window hides BrightBulb to the tray instead of quitting, so screen
-mirroring carries on and everything is exactly where you left it when you come
-back. **Ctrl+H** minimizes on demand, clicking the tray icon toggles the window,
-and the tray menu can start or stop mirroring without opening it at all.
+Create an entertainment area in the Hue app first (Settings → Entertainment areas), placing the lamps roughly where they are around your screen. Then hit the big button on the Sync page.
 
-Turn off **Close to Tray** in the main menu if you would rather the close button
-quit outright. Quitting — from the tray, the menu or **Ctrl+Q** — always releases
-the entertainment area.
+If your lights mirror the wrong way round, flip **Screen is at the far end**. It changes which end of the room BrightBulb treats as holding the screen. If a single light follows the wrong region, its position in the Hue app is probably not where it physically is.
 
-This needs something showing a tray. Any StatusNotifierItem host works (Waybar's
-`tray` module, Quickshell, GNOME with the AppIndicator extension, KDE); without
-one, closing the window quits, because hiding into a tray that is not there
-would leave no way back.
+### The tray
 
-### Screen sharing prompts
+Closing the window hides BrightBulb to the tray, so mirroring keeps going. Clicking the tray icon brings it back, and the tray menu can start or stop mirroring. Turn off **Close to tray** in Settings if you would rather the close button quit. Quitting, from the tray or with **Ctrl+Q**, always releases the entertainment area so other Hue apps can use it.
 
-The first time you start mirroring, your compositor asks which monitor to
-share. BrightBulb requests a persistent permission, so **choose the option to
-remember or allow restoring the selection** if your share picker offers one —
-on Hyprland it is an explicit choice in `hyprland-share-picker`. Do that and
-later launches reconnect without prompting at all.
+This needs something showing a tray: Waybar's `tray` module, Quickshell, KDE, or GNOME with the AppIndicator extension. Without one, closing the window quits, because hiding into a tray that isn't there would leave no way back.
 
-If you decline, everything still works; you are just asked each time.
-BrightBulb only negotiates once per run and keeps the session when mirroring
-stops, so you are never prompted twice in a session.
+### Coming from BrightBulb 1.x
 
-### Mirroring the wrong screen
+Your settings and bridge keys carry over: v2 reads the same `~/.config/brightbulb/settings.json` and imports the keys 1.x stored in your keyring, so there is nothing to re-pair. 1.x can still read the file afterwards.
 
-Because the choice is remembered, a monitor picked in an earlier session keeps
-being used — including one you have since unplugged, or picked on a different
-setup. Press **Change…** next to *Screen* on the Sync page: it forgets the
-stored selection and asks again, then resumes mirroring on the new screen if it
-was already running.
+## Technical details
 
-### If the mirroring looks wrong way round
+- **Stack**: Electron 43, React 19 and SCSS (Base UI primitives, Lucide icons), built with Electron Forge and Vite. TypeScript throughout.
+- **Processes**: The main process owns the bridge (CLIP v2 over HTTPS with a pinned certificate, the event stream, light writes, entertainment start/stop). Capture, colour processing and the DTLS stream run in a separate utility process, so UI work can't stall a frame, and a crash there still releases the area.
+- **Mirroring path**: capture tool (scaled to 64×36 by ffmpeg) → linear light → Gaussian region per lamp → saturation, brightness, smoothing → HueStream v2 over DTLS-PSK (`node-dtls-client`).
+- **Secrets**: The bridge keys are encrypted with Electron's `safeStorage`, which uses your Secret Service keyring (`gnome-keyring`, KWallet…). On Hyprland and Sway, BrightBulb points Chromium at the keyring explicitly, since it would otherwise fall back to an unencrypted store.
 
-Lights are mapped using the positions you gave them in the Hue app's
-entertainment area editor. If your left-hand lights follow the right of the
-screen, flip **Screen is at the far end** on the Sync page — that changes which
-end of the room BrightBulb treats as holding the screen.
-
-If individual lights follow the wrong region, their coordinates in the Hue app
-are probably not where they physically are; correcting them there fixes it
-here.
-
-## How it works
-
-Almost all of BrightBulb is Python. The one exception is `crates/hue-stream`, a
-small Rust extension providing DTLS-PSK.
-
-That exists out of necessity rather than preference. The Hue Entertainment API
-requires DTLS 1.2 with `TLS_PSK_WITH_AES_128_GCM_SHA256`, and no pure-Python
-option can currently do it: `pyOpenSSL` exposes DTLS but has no PSK API at all,
-and `python-mbedtls` last shipped wheels for CPython 3.12 built against
-mbedTLS 2.28. System OpenSSL supports the cipher suite, so we reach it from
-Rust and hand Python a three-method object.
-
-The mirroring path is:
-
-```
-portal ScreenCast → PipeWire → GStreamer (scale to 64×36) → mapper → colour → DTLS
-```
-
-GStreamer does the downscaling, so Python only ever touches a few kilobytes per
-frame. Colours are averaged in **linear light**, not gamma-encoded sRGB —
-averaging encoded pixels makes dark scenes visibly too bright.
-
-The tray icon is spoken directly over D-Bus (`org.kde.StatusNotifierItem` plus
-`com.canonical.dbusmenu`) rather than through libayatana-appindicator. GTK4
-dropped `GtkStatusIcon` and the usual replacement links against GTK3 — loading
-GTK3 and GTK4 into one process aborts — so the protocol is easier than the
-library.
-
-## Development
+### Development
 
 ```fish
-make check      # ruff, mypy, cargo clippy, pytest
-make test
-make lint
+npm ci
+npm start                            # run with hot reload
+npm run lint; npm run typecheck; npm test
+BRIGHTBULB_DEBUG=1 npm start         # verbose logs, DevTools on port 9229
 ```
 
-Packaging is driven by the `Makefile`; `make install` builds both wheels and
-stages them, which is exactly what the AUR `PKGBUILD` calls.
+`npm run spike:dtls` streams a test pattern to an entertainment area, which is handy for checking a bridge without the UI.
 
 ## License
 
