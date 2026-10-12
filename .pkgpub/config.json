@@ -1,0 +1,10 @@
+{
+  "packages": {
+    "packaging/aur/PKGBUILD": {
+      "versionSource": {
+        "type": "git-revision",
+        "srcDir": "brightbulb"
+      }
+    }
+  }
+}

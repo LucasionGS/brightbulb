@@ -6,7 +6,7 @@ _electron=electron43
 # Placeholder: aur-publish.sh patches this to the real r<count>.<hash> before
 # generating .SRCINFO. Keep it in the r-scheme; a bare 2.0.0 would sort *newer*
 # than every r-version if it ever reached the AUR unpatched.
-pkgver=r3.a8a410e
+pkgver=r10.fdadacb
 pkgrel=1
 pkgdesc="Open source Philips Hue control center with screen mirroring (git)"
 arch=('x86_64' 'aarch64')
